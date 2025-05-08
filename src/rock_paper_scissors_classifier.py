@@ -88,8 +88,8 @@ def main():
     # Cargar datos
     train_images, train_labels, test_images, test_labels = load_data()
 
-print("Distribución de clases en entrenamiento:", np.unique(train_labels, return_counts=True))
-print("Distribución en test:", np.unique(test_labels, return_counts=True))
+    print("Distribución de clases en entrenamiento:", np.unique(train_labels, return_counts=True))
+    print("Distribución en test:", np.unique(test_labels, return_counts=True))
 
     # Crear modelo
     model = create_model()
