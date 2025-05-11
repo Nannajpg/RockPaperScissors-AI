@@ -4,23 +4,20 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 import time
 import random
-import os  # Añadido para verificar existencia del archivo
 
 # Configuración
-MODEL_PATH = 'rock_paper_scissors_model.h5'
+MODEL_PATH = 'rock_paper_scissors_model.h5'  
 CLASS_NAMES = ['rock', 'paper', 'scissors']
-DETECTION_ZONE_SIZE = 300
-UPDATE_INTERVAL = 0.2
+DETECTION_ZONE_SIZE = 300  
+UPDATE_INTERVAL = 0.2  
 
 def preprocess_image(image):
-    """Preprocesa la imagen para la red neuronal"""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    resized = cv2.resize(gray, (150, 150))
+    resized = cv2.resize(gray, (28, 28))
     normalized = resized / 255.0
-    return normalized.reshape(150, 150, 1)
+    return normalized.reshape(28, 28, 1)
 
 def draw_detection_zone(frame):
-    """Dibuja la zona de detección en el frame principal"""
     h, w = frame.shape[:2]
     x1 = (w - DETECTION_ZONE_SIZE) // 2
     y1 = (h - DETECTION_ZONE_SIZE) // 2
@@ -28,6 +25,8 @@ def draw_detection_zone(frame):
     y2 = y1 + DETECTION_ZONE_SIZE
 
     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+    # Devolver la región de interés
     return frame[y1:y2, x1:x2]
 
 def determine_winner(user_choice, computer_choice):
@@ -35,21 +34,23 @@ def determine_winner(user_choice, computer_choice):
     if user_choice == computer_choice:
         return "Empate"
     elif (user_choice == 'rock' and computer_choice == 'scissors') or \
-         (user_choice == 'paper' and computer_choice == 'rock') or \
-         (user_choice == 'scissors' and computer_choice == 'paper'):
+        (user_choice == 'paper' and computer_choice == 'rock') or \
+        (user_choice == 'scissors' and computer_choice == 'paper'):
         return "¡Ganaste!"
     else:
         return "¡Perdiste!"
 
 def main():
-    # Verificar y cargar modelo (sin entrenamiento automático)
-    if not os.path.exists(MODEL_PATH):
-        print(f"Error: No se encontró el modelo en {MODEL_PATH}")
-        print("Por favor entrena el modelo primero con el script de entrenamiento.")
-        return
-    
-    model = load_model(MODEL_PATH)
-    print("Modelo cargado exitosamente")
+    # Cargar modelo (asegúrate de tener el modelo entrenado)
+    try:
+        model = load_model(MODEL_PATH)
+    except:
+        print("Error al cargar el modelo. Entrenando uno básico...")
+        from rock_paper_scissors_classifier import create_model, load_data
+        train_images, train_labels, test_images, test_labels = load_data()
+        model = create_model()
+        model.fit(train_images, train_labels, epochs=5, batch_size=64)
+        model.save(MODEL_PATH)
 
     # Inicializar cámara
     cap = cv2.VideoCapture(0)
@@ -58,7 +59,7 @@ def main():
         return
 
     # Estado del juego
-    game_state = "waiting"
+    game_state = "waiting"  # waiting, counting, showing_result
     countdown = 3
     last_time = time.time()
     last_prediction_time = time.time()
@@ -76,7 +77,6 @@ def main():
         # Obtener zona de detección
         detection_zone = draw_detection_zone(frame)
 
-        # Preprocesar imagen para predicción
         processed_img = preprocess_image(detection_zone)
 
         # Actualizar predicción regularmente
@@ -88,12 +88,12 @@ def main():
             prediction_confidence = prediction[pred_index]
             last_prediction_time = current_time
 
-        # Mostrar vista de análisis
+        # Mostrar vista de análisis (imagen preprocesada con anotaciones)
         analysis_view = cv2.cvtColor((processed_img * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
         cv2.putText(analysis_view, f"Prediccion: {current_prediction}",
-                   (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         cv2.putText(analysis_view, f"Confianza: {prediction_confidence:.2f}",
-                   (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
         # Lógica del juego
         if game_state == "counting":
@@ -107,24 +107,24 @@ def main():
 
         # Mostrar información en el frame principal
         cv2.putText(frame, f"Estado: {game_state}", (10, 30),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
         if game_state == "waiting":
             cv2.putText(frame, "Presiona 's' para jugar", (10, 60),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         elif game_state == "counting":
             cv2.putText(frame, str(countdown),
-                       (frame.shape[1]//2 - 30, frame.shape[0]//2),
-                       cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
+                    (frame.shape[1]//2 - 30, frame.shape[0]//2),
+                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
         elif game_state == "showing_result":
             cv2.putText(frame, f"Tu: {current_prediction}", (10, 90),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             cv2.putText(frame, f"IA: {computer_choice}", (10, 120),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             cv2.putText(frame, result, (10, 150),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             cv2.putText(frame, "Presiona 's' para jugar de nuevo", (10, 180),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
         # Mostrar frames
         cv2.imshow('Piedra, Papel o Tijeras', frame)
@@ -135,7 +135,7 @@ def main():
         if key == ord('q'):
             break
         elif key == ord('s'):
-            if game_state != "counting":
+            if game_state != "counting":  # Evitar reiniciar durante cuenta regresiva
                 game_state = "counting"
                 countdown = 3
                 last_time = current_time
