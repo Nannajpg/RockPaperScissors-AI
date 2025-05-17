@@ -19,7 +19,7 @@ def main():
     history = model.fit(
         train_images,
         train_labels,
-        epochs=100,
+        epochs=10,
         batch_size=32,
         validation_split=0.2,
     ).history

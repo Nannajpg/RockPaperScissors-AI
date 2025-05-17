@@ -10,12 +10,13 @@ MODEL_PATH = 'rock_paper_scissors_model.h5'
 CLASS_NAMES = ['rock', 'paper', 'scissors']
 DETECTION_ZONE_SIZE = 300  
 UPDATE_INTERVAL = 0.2  
+IMG_SIZE = 64
 
 def preprocess_image(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    resized = cv2.resize(gray, (28, 28))
+    resized = cv2.resize(gray, (IMG_SIZE, IMG_SIZE))
     normalized = resized / 255.0
-    return normalized.reshape(28, 28, 1)
+    return normalized.reshape(IMG_SIZE, IMG_SIZE, 1)
 
 def draw_detection_zone(frame):
     h, w = frame.shape[:2]

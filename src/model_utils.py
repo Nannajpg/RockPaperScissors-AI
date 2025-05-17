@@ -1,8 +1,10 @@
 from tensorflow import keras
 
+SIZE = 64
+
 def create_model():
     model = keras.Sequential([
-        keras.layers.Flatten(input_shape=(28, 28, 1)),
+        keras.layers.Flatten(input_shape=(SIZE, SIZE, 1)),
         keras.layers.Dense(512, activation='relu'),
         keras.layers.Dense(256, activation='relu'),
         keras.layers.Dense(128, activation='relu'),
